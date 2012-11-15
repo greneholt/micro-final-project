@@ -109,11 +109,12 @@ void setupKeypad(void) {
 	TCTL3 = 0x22; // %00100010
 	TCTL4 = 0x20; // $00100000
 
-	PTT &= ~0xFC; // set PT 7-2 low
+	// set PT 7,5,3 high
+	PTT |= 0xFC; // %1010100
 
-	// set PT5 to go high
+	// set PT5 to go low
 	TC5 = TCNT + SCAN_TICKS;
-	TCTL1 = 0x0C; // %00001100
+	TCTL1 = 0x08; // %00001000
 }
 
 void setupPWM(void) {
@@ -186,26 +187,26 @@ isr PT1 output compare {
 
 // keypad control ISRs
 void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
-	if (PTT_PTT5) { // PT3 just went low and PT5 just went high
-		TCTL1 = 0xC8; // %11001000 // set PT5 to go low, PT7 to go high
+	if (PTT_PTT5) { // PT3 just went high and PT5 just went low
+		TCTL1 = 0x8C; // %10001100 // set PT5 to go high, PT7 to go low
 		TC5 = TC5 + SCAN_TICKS;
 		TC7 = TC5 + DEAD_TICKS;
 	}
 }
 
 void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
-	if (PTT_PTT7) { // PT5 just went low and PT7 just went high
-		TCTL1 = 0x80; // %10000000 // set PT7 to go low, PT3 to go high
-		TCTL2 = 0xC0; // %11000000
+	if (PTT_PTT7) { // PT5 just went high and PT7 just went low
+		TCTL1 = 0xC0; // %11000000 // set PT7 to go high, PT3 to go low
+		TCTL2 = 0x80; // %10000000
 		TC7 = TC7 + SCAN_TICKS;
 		TC6 = TC7 + DEAD_TICKS;
 	}
 }
 
 void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
-	if (PTT_PTT3) { // PT7 just went low and PT3 just went high
-		TCTL1 = 0x0C; // %00001100 // set PT3 to go low, PT5 to go high
-		TCTL2 = 0x80; // %10000000
+	if (PTT_PTT3) { // PT7 just went high and PT3 just went low
+		TCTL1 = 0x08; // %00001000 // set PT3 to go high, PT5 to go low
+		TCTL2 = 0xC0; // %11000000
 		TC3 = TC3 + SCAN_TICKS;
 		TC5 = TC3 + DEAD_TICKS;
 	}
