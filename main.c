@@ -1,5 +1,6 @@
-const COLS = 20;
-const ROWS = 4;
+#define COLS (20)
+#define ROWS (4)
+
 char note;
 char playing; // boolean currently playing
 char song[COLS]; // stores note periods in timer counts
