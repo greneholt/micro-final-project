@@ -195,7 +195,7 @@ isr PT1 output compare {
 
 // keypad control ISRs
 void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
-	if (PTT_PTT5) { // PT3 just went high and PT5 just went low
+	if (!PTT_PTT5) { // PT3 just went high and PT5 just went low
 		TCTL1 = 0x8C; // %10001100 // set PT5 to go high, PT7 to go low
 		TC5 = TC5 + SCAN_TICKS;
 		TC7 = TC5 + DEAD_TICKS;
@@ -203,7 +203,7 @@ void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 }
 
 void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
-	if (PTT_PTT7) { // PT5 just went high and PT7 just went low
+	if (!PTT_PTT7) { // PT5 just went high and PT7 just went low
 		TCTL1 = 0xC0; // %11000000 // set PT7 to go high, PT3 to go low
 		TCTL2 = 0x80; // %10000000
 		TC7 = TC7 + SCAN_TICKS;
@@ -212,7 +212,7 @@ void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
 }
 
 void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
-	if (PTT_PTT3) { // PT7 just went high and PT3 just went low
+	if (!PTT_PTT3) { // PT7 just went high and PT3 just went low
 		TCTL1 = 0x08; // %00001000 // set PT3 to go high, PT5 to go low
 		TCTL2 = 0xC0; // %11000000
 		TC3 = TC3 + SCAN_TICKS;
@@ -220,42 +220,51 @@ void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
 	}
 }
 
-isr PT4 input capture {
-	if (PT5 high) {
+// the columns are 3,1,5 which equate to PT5,PT7,PT3
+// the pins for the rows on the keypad are 2,7,6, which equate to PT6,PT4,PT2
+
+void interrupt VectorNumber_Vtimch6 ic6_isr(void) {
+	// clear flag
+	TFLG1 = 0x40; // %01000000
+	if (!PTT_PTT5) {
 		keypressed = 1;
-		key = '7';
-	} else if (PT6 high) {
+		key = '1';
+	} else if (!PTT_PTT7) {
 		keypressed = 1;
-		key = '8';
-	} else if (PT7 high) {
+		key = '2';
+	} else if (!PTT_PTT3) {
 		keypressed = 1;
-		key = '9';
+		key = '3';
 	}
 }
 
-isr PT3 input capture {
-	if (PT5 high) {
+void interrupt VectorNumber_Vtimch4 ic4_isr(void) {
+	// clear flag
+	TFLG1 = 0x10; // %00010000
+	if (!PTT_PTT5) {
 		keypressed = 1;
 		key = '4';
-	} else if (PT6 high) {
+	} else if (!PTT_PTT7) {
 		keypressed = 1;
 		key = '5';
-	} else if (PT7 high) {
+	} else if (!PTT_PTT3) {
 		keypressed = 1;
 		key = '6';
 	}
 }
 
-isr PT2 input capture {
-	if (PT5 high) {
+void interrupt VectorNumber_Vtimch2 ic2_isr(void) {
+	// clear flag
+	TFLG1 = 0x04; // %00000100
+	if (!PTT_PTT5) {
 		keypressed = 1;
-		key = '1';
-	} else if (PT6 high) {
+		key = '7';
+	} else if (!PTT_PTT7) {
 		keypressed = 1;
-		key = '2';
-	} else if (PT7 high) {
+		key = '8';
+	} else if (!PTT_PTT3) {
 		keypressed = 1;
-		key = '3';
+		key = '9';
 	}
 }
 
