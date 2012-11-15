@@ -117,8 +117,16 @@ void setupKeypad(void) {
 	TCTL1 = 0x08; // %00001000
 }
 
+// PT1 is PWMed to control the speaker
 void setupPWM(void) {
-
+	// prescaler of 16, divider of 7
+	PWMPRCLK = 0x04; // %00000100
+	PWMSCLA = 7;
+	// select clock SA for PT1
+	PWMCLK = 0x02; // %00000010
+	PWMPOL = 0x02;
+	PWME = 0x02;
+	MODRR = 0x02;
 }
 
 void main() {
