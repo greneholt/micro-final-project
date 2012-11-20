@@ -13,6 +13,16 @@ char cursorX;
 char cursorY;
 char rti_count;
 
+/*
+PWM @ M = 1 / N = 184
+C4 - 261.63 Hz / 132 cm = 0.003882 s = 3.882 ms = 3882 us / # Ticks = 253.63 => 254
+D4 - 293.66 Hz / 117 cm = 0.003405 s = 3.405 ms = 3405 us / # Ticks = 222.0652 => 222
+E4 - 329.63 Hz / 105 cm = 0.003034 s = 3.034 ms = 3034 us / # Ticks = 197.8696 => 198
+G4 - 392.00 Hz / 88.0 cm = 0.002551 s = 2.551 ms = 2551 us / # Ticks = 166.3696 => 166
+A4 - 440.00 Hz / 78.4 cm = 0.002273 s = 2.273 ms = 2273 us / # Ticks = 148.2391 = > 148
+*/
+char pwmTable[] = { 254, 222, 198, 166, 148 };
+
 void DelayuSec(int t) {
 	if(t == 0) return;
 
@@ -120,9 +130,9 @@ void setupKeypad(void) {
 
 // PT1 is PWMed to control the speaker
 void setupPWM(void) {
-	// prescaler of 16, divider of 7
-	PWMPRCLK = 0x04; // %00000100
-	PWMSCLA = 7;
+	// prescaler of 1, divider of 184
+	PWMPRCLK = 0x00; // %00000100
+	PWMSCLA = 184;
 	// select clock SA for PT1
 	PWMCLK = 0x02; // %00000010
 	PWMPOL = 0x02;
