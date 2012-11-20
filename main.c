@@ -11,6 +11,7 @@ char keypressed;
 char key;
 char cursorX;
 char cursorY;
+char rti_count;
 
 void DelayuSec(int t) {
 	if(t == 0) return;
@@ -145,16 +146,11 @@ void main() {
 
 	playing = 1;
 	note = 0;
+	rti_count = 0;
 
 	keypressed = 0;
 	cursorX = 0;
 	cursorY = 0;
-
-	set PT5 to go high
-	TC5 = TCNT + scan interval
-
-	set PT1 to go high
-	TC1 = TCNT + song[note];
 
 	setupPWM();
 
@@ -162,7 +158,7 @@ void main() {
 
 	setupRTI();
 
-	loop {
+	for(;;) {
 		if (keypressed) {
 			keypressed = 0;
 			if (key == UP || key == DOWN || key == RIGHT || key == LEFT) {
@@ -183,8 +179,6 @@ void main() {
 		}
 	}
 }
-
-char rti_count = 0;
 
 void interrupt VectorNumber_Vrti rti_isr(void) {
 	CRGFLAG = 0x80;
