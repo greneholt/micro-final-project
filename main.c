@@ -129,6 +129,11 @@ void setupPWM(void) {
 	MODRR = 0x02;
 }
 
+void setupRTI(void) {
+	RTICTL = 0x7f; // set divider to 16*2^16, freq of 7.629 Hz
+	CRGINT = 0x80; // enable RTI interrupt
+}
+
 void main() {
 	// PT 7,5,3,1,0 are outputs
 	DDRT = 0xAB; // %10101011
@@ -155,6 +160,8 @@ void main() {
 
 	setupKeypad();
 
+	setupRTI();
+
 	loop {
 		if (keypressed) {
 			keypressed = 0;
@@ -177,20 +184,18 @@ void main() {
 	}
 }
 
-// RTI (song advance)
-isr RTI {
-	note = (note + 1) % songlength;
-}
+char rti_count = 0;
 
-// speaker control
-isr PT1 output compare {
-	if (PT1 low) {
-		set PT1 to go high
+void interrupt VectorNumber_Vrti rti_isr(void) {
+	CRGFLAG = 0x80;
+
+	// 0.78647267 seconds per note
+	if (rti_count++ == 6) {
+		rti_count = 0;
+		note = (note + 1) % COLS;
+		PWMPER1 = song[note];
+		PWMDTY1 = song[note]/2;
 	}
-	else {
-		set PT2 to go low
-	}
-	TC1 = TC1 + song[note];
 }
 
 // keypad control ISRs
@@ -270,22 +275,21 @@ void interrupt VectorNumber_Vtimch2 ic2_isr(void) {
 
 void playOrPause() {
 	if (playing) {
-		playing = false;
-		disable PT1 isr
-		disable RTI isr
-		set PT1 low
+		playing = 0;
+		CRGINT = 0x00; // disable RTI
+		PWME = 0x00; // disable PWM
 	}
 	else {
-		playing = true;
-		enable PT1 isr
-		enable RTI isr
-		set PT1 high
-		TC1 = TCNT + song[note];
+		playing = 1;
+		CRGINT = 0x80; // enable RTI
+		PWME = 0x02; // enable PWM
 	}
 }
 
 void clearSong() {
-	set all note[] to -1
+	for (char i = 0; i < COLS; i++) {
+		song[i] = -1;
+	}
 }
 
 void moveCursor(char key) {
