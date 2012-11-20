@@ -19,9 +19,17 @@ C4 - 261.63 Hz / 132 cm = 0.003882 s = 3.882 ms = 3882 us / # Ticks = 253.63 => 
 D4 - 293.66 Hz / 117 cm = 0.003405 s = 3.405 ms = 3405 us / # Ticks = 222.0652 => 222
 E4 - 329.63 Hz / 105 cm = 0.003034 s = 3.034 ms = 3034 us / # Ticks = 197.8696 => 198
 G4 - 392.00 Hz / 88.0 cm = 0.002551 s = 2.551 ms = 2551 us / # Ticks = 166.3696 => 166
-A4 - 440.00 Hz / 78.4 cm = 0.002273 s = 2.273 ms = 2273 us / # Ticks = 148.2391 = > 148
+A4 - 440.00 Hz / 78.4 cm = 0.002273 s = 2.273 ms = 2273 us / # Ticks = 148.2391 => 148
 */
 char pwmTable[] = { 254, 222, 198, 166, 148 };
+
+#define RIGHT '6'
+#define LEFT '4'
+#define UP '8'
+#define DOWN '2'
+#define ENTER '5'
+#define CLEAR '9'
+#define PLAY_PAUSE '7'
 
 void DelayuSec(int t) {
 	if(t == 0) return;
@@ -131,7 +139,7 @@ void setupKeypad(void) {
 // PT1 is PWMed to control the speaker
 void setupPWM(void) {
 	// prescaler of 1, divider of 184
-	PWMPRCLK = 0x00; // %00000100
+	PWMPRCLK = 0x00;
 	PWMSCLA = 184;
 	// select clock SA for PT1
 	PWMCLK = 0x02; // %00000010
@@ -197,8 +205,14 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 	if (rti_count++ == 6) {
 		rti_count = 0;
 		note = (note + 1) % COLS;
-		PWMPER1 = song[note];
-		PWMDTY1 = song[note]/2;
+		if (song[note] == -1) {
+			PWME = 0x00;
+		}
+		else {
+			PWME = 0x02;
+			PWMPER1 = song[note];
+			PWMDTY1 = song[note]/2;
+		}
 	}
 }
 
@@ -312,7 +326,7 @@ void moveCursor(char key) {
 }
 
 void setNote() {
-	note[cursorX] = period for cursorY
+	note[cursorX] = pwmTable[cursorY];
 }
 
 void redraw() {
@@ -321,7 +335,7 @@ void redraw() {
 	for (char y = 0; y < ROWS; y++) {
 		for (x = 0; x < COLS; x++) {
 			if (x == cursorX && y = cursorY) {
-				if (note[x] period is for y) {
+				if (note[x] == pwmTable[y]) {
 					writeByteToLCD('d', 1, 50);
 				}
 				else {
@@ -329,7 +343,7 @@ void redraw() {
 				}
 			}
 			else {
-				if (note[x] period is for y) {
+				if (note[x] == pwmTable[y]) {
 					writeByteToLCD('l', 1, 50);
 				}
 				else {
