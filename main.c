@@ -1,3 +1,7 @@
+#include <hidef.h>      /* common defines and macros */
+#include "derivative.h"      /* derivative-specific definitions */
+
+
 #define COLS (20)
 #define ROWS (4)
 
@@ -153,53 +157,8 @@ void setupRTI(void) {
 	CRGINT = 0x80; // enable RTI interrupt
 }
 
-void main() {
-	// PT 7,5,3,1,0 are outputs
-	DDRT = 0xAB; // %10101011
-	// PM 5,3,2,1,0 are outputs
-	// PM4 is an input because it is being driven by PT1
-	DDRM = 0x2F; // %00101111
-
-	InitializeLCD();
-
-	playing = 1;
-	note = 0;
-	rti_count = 0;
-
-	keypressed = 0;
-	cursorX = 0;
-	cursorY = 0;
-
-	setupPWM();
-
-	setupKeypad();
-
-	setupRTI();
-
-	for(;;) {
-		if (keypressed) {
-			keypressed = 0;
-			if (key == UP || key == DOWN || key == RIGHT || key == LEFT) {
-				moveCursor(key);
-				redraw();
-			}
-			else if (key == ENTER) {
-				setNote();
-				redraw();
-			}
-			else if (key == PLAY_PAUSE) {
-				playOrPause();
-			}
-			else if (key == CLEAR) {
-				clearSong();
-				redraw();
-			}
-		}
-	}
-}
-
 void interrupt VectorNumber_Vrti rti_isr(void) {
-	CRGFLAG = 0x80;
+	CRGFLG = 0x80;
 
 	// 0.78647267 seconds per note
 	if (rti_count++ == 6) {
@@ -305,7 +264,8 @@ void playOrPause() {
 }
 
 void clearSong() {
-	for (char i = 0; i < COLS; i++) {
+  char i;
+	for (i = 0; i < COLS; i++) {
 		song[i] = -1;
 	}
 }
@@ -326,16 +286,18 @@ void moveCursor(char key) {
 }
 
 void setNote() {
-	note[cursorX] = pwmTable[cursorY];
+	song[cursorX] = pwmTable[cursorY];
 }
 
 void redraw() {
+  char x, y;
+  
 	clearLCD();
 
-	for (char y = 0; y < ROWS; y++) {
+	for (y = 0; y < ROWS; y++) {
 		for (x = 0; x < COLS; x++) {
-			if (x == cursorX && y = cursorY) {
-				if (note[x] == pwmTable[y]) {
+			if (x == cursorX && y == cursorY) {
+				if (song[x] == pwmTable[y]) {
 					writeByteToLCD('d', 1, 50);
 				}
 				else {
@@ -343,7 +305,7 @@ void redraw() {
 				}
 			}
 			else {
-				if (note[x] == pwmTable[y]) {
+				if (song[x] == pwmTable[y]) {
 					writeByteToLCD('l', 1, 50);
 				}
 				else {
@@ -351,5 +313,53 @@ void redraw() {
 				}
 			}
 		}
+	}
+}
+
+void main(void) {
+	// PT 7,5,3,1,0 are outputs
+	DDRT = 0xAB; // %10101011
+	// PM 5,3,2,1,0 are outputs
+	// PM4 is an input because it is being driven by PT1
+	DDRM = 0x2F; // %00101111
+
+	InitializeLCD();
+
+	playing = 1;
+	note = 0;
+	rti_count = 0;
+
+	keypressed = 0;
+	cursorX = 0;
+	cursorY = 0;
+
+	setupPWM();
+
+	setupKeypad();
+
+	setupRTI();
+
+  EnableInterrupts;
+
+	for(;;) {
+		if (keypressed) {
+			keypressed = 0;
+			if (key == UP || key == DOWN || key == RIGHT || key == LEFT) {
+				moveCursor(key);
+				redraw();
+			}
+			else if (key == ENTER) {
+				setNote();
+				redraw();
+			}
+			else if (key == PLAY_PAUSE) {
+				playOrPause();
+			}
+			else if (key == CLEAR) {
+				clearSong();
+				redraw();
+			}
+		}
+		_FEED_COP();
 	}
 }
