@@ -5,11 +5,10 @@
 #define COLS (20)
 #define ROWS (4)
 
-//#define SCAN_TICKS (37453u) // 100ms on time per column
-#define SCAN_TICKS (3745u)
+#define SCAN_TICKS (37453u) // 100ms on time per column
 #define DEAD_TICKS (374u) // 1ms all channels off
 
-#define DEBOUNCE_INTERVAL (100u)
+#define DEBOUNCE_INTERVAL (1000u)
 
 char note;
 char playing; // boolean currently playing
@@ -20,6 +19,7 @@ char cursorX;
 char cursorY;
 char rti_count;
 unsigned int next_press;
+unsigned char keypad_col;
 
 /*
 PWM @ M = 1 / N = 184
@@ -125,7 +125,7 @@ The keypad needs to cycle through the pins in the order 3,1,5 which equates to P
 */
 
 void setupKeypad(void) {
-	TSCR1 = 0x90; // enable timer and fast flag clear
+	TSCR1 = 0x80; // enable timer and fast flag clear
 	TSCR2 = 0x06; // disable overflow interrupt, set prescaler to 64, 2.67us per tick, overflow occurs at 174.8ms
 	TFLG1 = 0xff; // clear all timer flags
 
@@ -137,11 +137,12 @@ void setupKeypad(void) {
 	TCTL4 = 0x20; // $00100000
 
 	// set PT 7,5,3 high
-	PTT |= 0xFC; // %1010100
+	PTT |= 0xA8; // %10101000
 
 	// set PT5 to go low
 	TC5 = TCNT + SCAN_TICKS;
 	TCTL1 = 0x08; // %00001000
+	keypad_col = 3;
 	
 	// enable interrupts on all keypad channels
 	TIE = 0xFC; // %11111100
@@ -168,7 +169,7 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 	CRGFLG = 0x80;
 
 	// three RTI counts per note
-	if (rti_count++ == 3) {
+	if (++rti_count == 2) {
 		rti_count = 0;
 		note = (note + 1) % COLS;
 		if (song[note] == 0) {
@@ -184,29 +185,38 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 
 // keypad control ISRs
 void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
-	if (!PTT_PTT5) { // PT3 just went high and PT5 just went low
+  // clear flag
+  TFLG1 = 0x20; // %00100000
+	if (keypad_col == 3) { // PT3 just went high and PT5 just went low
 		TCTL1 = 0x8C; // %10001100 // set PT5 to go high, PT7 to go low
 		TCTL2 = 0x00;
 		TC5 = TC5 + SCAN_TICKS;
 		TC7 = TC5 + DEAD_TICKS;
+		keypad_col = 5;
 	}
 }
 
 void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
-	if (!PTT_PTT7) { // PT5 just went high and PT7 just went low
+	// clear flag
+  TFLG1 = 0x80; // %10000000
+	if (keypad_col == 5) { // PT5 just went high and PT7 just went low
 		TCTL1 = 0xC0; // %11000000 // set PT7 to go high, PT3 to go low
 		TCTL2 = 0x80; // %10000000
 		TC7 = TC7 + SCAN_TICKS;
-		TC6 = TC7 + DEAD_TICKS;
+		TC3 = TC7 + DEAD_TICKS;
+		keypad_col = 7;
 	}
 }
 
 void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
-	if (!PTT_PTT3) { // PT7 just went high and PT3 just went low
+  // clear flag
+  TFLG1 = 0x08; // %00001000
+	if (keypad_col == 7) { // PT7 just went high and PT3 just went low
 		TCTL1 = 0x08; // %00001000 // set PT3 to go high, PT5 to go low
 		TCTL2 = 0xC0; // %11000000
 		TC3 = TC3 + SCAN_TICKS;
 		TC5 = TC3 + DEAD_TICKS;
+		keypad_col = 3;
 	}
 }
 
@@ -216,19 +226,19 @@ void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
 void interrupt VectorNumber_Vtimch6 ic6_isr(void) {
 	// clear flag
 	TFLG1 = 0x40; // %01000000
-	if (!PTT_PTT5) {
+	if (keypad_col == 5) {
 		if (key != '1' || TCNT > next_press) {
 			keypressed = 1;
 			key = '1';
 			next_press = TCNT + DEBOUNCE_INTERVAL;
 		}
-	} else if (!PTT_PTT7) {
+	} if (keypad_col == 7) {
 		if (key != '2' || TCNT > next_press) {
 			keypressed = 1;
 			key = '2';
 			next_press = TCNT + DEBOUNCE_INTERVAL;
 		}
-	} else if (!PTT_PTT3) {
+	} else if (keypad_col == 3) {
 		if (key != '3' || TCNT > next_press) {
 			keypressed = 1;
 			key = '3';
@@ -240,19 +250,19 @@ void interrupt VectorNumber_Vtimch6 ic6_isr(void) {
 void interrupt VectorNumber_Vtimch4 ic4_isr(void) {
 	// clear flag
 	TFLG1 = 0x10; // %00010000
-	if (!PTT_PTT5) {
+	if (keypad_col == 5) {
 		if (key != '4' || TCNT > next_press) {
 			keypressed = 1;
 			key = '4';
 			next_press = TCNT + DEBOUNCE_INTERVAL;
 		}
-	} else if (!PTT_PTT7) {
+	} if (keypad_col == 7) {
 		if (key != '5' || TCNT > next_press) {
 			keypressed = 1;
 			key = '5';
 			next_press = TCNT + DEBOUNCE_INTERVAL;
 		}
-	} else if (!PTT_PTT3) {
+	} if (keypad_col == 3) {
 		if (key != '6' || TCNT > next_press) {
 			keypressed = 1;
 			key = '6';
@@ -264,19 +274,19 @@ void interrupt VectorNumber_Vtimch4 ic4_isr(void) {
 void interrupt VectorNumber_Vtimch2 ic2_isr(void) {
 	// clear flag
 	TFLG1 = 0x04; // %00000100
-	if (!PTT_PTT5) {
+	if (keypad_col == 5) {
 		if (key != '7' || TCNT > next_press) {
 			keypressed = 1;
 			key = '7';
 			next_press = TCNT + DEBOUNCE_INTERVAL;
 		}
-	} else if (!PTT_PTT7) {
+	} else if (keypad_col == 7) {
 		if (key != '8' || TCNT > next_press) {
 			keypressed = 1;
 			key = '8';
 			next_press = TCNT + DEBOUNCE_INTERVAL;
 		}
-	} else if (!PTT_PTT3) {
+	} else if (keypad_col == 3) {
 		if (key != '9' || TCNT > next_press) {
 			keypressed = 1;
 			key = '9';
