@@ -8,7 +8,7 @@
 #define SCAN_TICKS (200u) // 100ms on time per column
 #define DEAD_TICKS (5u) // 1ms all channels off
 
-#define DEBOUNCE_INTERVAL (37400u)
+#define DEBOUNCE_INTERVAL (374u)
 
 char note;
 char playing; // boolean currently playing
@@ -125,7 +125,7 @@ The keypad needs to cycle through the pins in the order 3,1,5 which equates to P
 */
 
 void setupKeypad(void) {
-	TSCR1 = 0x80; // enable timer and fast flag clear
+	TSCR1 = 0x80; // enable timer and disable fast flag clear
 	TSCR2 = 0x87; // enable overflow interrupt, set prescaler to 128, 5.33us per tick, overflow occurs at 349.5ms
 
 	// PT7, PT5, PT3 are output compare
@@ -204,21 +204,21 @@ void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 				keypressed = 1;
 				key = '1';
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (key == '1') {
+			} else if (PTIT_PTIT6 && key == '1') {
 				key = 0;
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			} else if (!PTIT_PTIT2 && key != '4') {
 				keypressed = 1;
 				key = '4';
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (key == '4') {
+			} else if (PTIT_PTIT2 && key == '4') {
 				key = 0;
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			} else if (!PTIT_PTIT4 && key != '7') {
 				keypressed = 1;
 				key = '7';
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (key == '7') {
+			} else if (PTIT_PTIT4 && key == '7') {
 				key = 0;
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			}
@@ -241,21 +241,21 @@ void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
 				keypressed = 1;
 				key = '2';
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (key == '2') {
+			} else if (PTIT_PTIT6 && key == '2') {
 				key = 0;
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			} else if (!PTIT_PTIT2 && key != '5') {
 				keypressed = 1;
 				key = '5';
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (key == '5') {
+			} else if (PTIT_PTIT2 && key == '5') {
 				key = 0;
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			} else if (!PTIT_PTIT4 && key != '8') {
 				keypressed = 1;
 				key = '8';
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (key == '8') {
+			} else if (PTIT_PTIT4 && key == '8') {
 				key = 0;
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			}
@@ -278,21 +278,21 @@ void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
 				keypressed = 1;
 				key = '3';
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (key == '3') {
+			} else if (PTIT_PTIT6 && key == '3') {
 				key = 0;
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			} else if (!PTIT_PTIT2 && key != '6') {
 				keypressed = 1;
 				key = '6';
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (key == '6') {
+			} else if (PTIT_PTIT2 && key == '6') {
 				key = 0;
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			} else if (!PTIT_PTIT4 && key != '9') {
 				keypressed = 1;
 				key = '9';
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (key == '9') {
+			} else if (PTIT_PTIT4 && key == '9') {
 				key = 0;
 				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			}
