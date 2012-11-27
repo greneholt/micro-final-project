@@ -8,6 +8,8 @@
 #define SCAN_TICKS (37453u) // 100ms on time per column
 #define DEAD_TICKS (374u) // 1ms all channels off
 
+#define DEBOUNCE_INTERVAL (100u)
+
 char note;
 char playing; // boolean currently playing
 char song[COLS]; // stores note periods in timer counts
@@ -16,6 +18,7 @@ char key;
 char cursorX;
 char cursorY;
 char rti_count;
+unsigned int next_press;
 
 /*
 PWM @ M = 1 / N = 184
@@ -209,14 +212,23 @@ void interrupt VectorNumber_Vtimch6 ic6_isr(void) {
 	// clear flag
 	TFLG1 = 0x40; // %01000000
 	if (!PTT_PTT5) {
-		keypressed = 1;
-		key = '1';
+		if (key != '1' || TCNT > next_press) {
+			keypressed = 1;
+			key = '1';
+			next_press = TCNT + DEBOUNCE_INTERVAL;
+		}
 	} else if (!PTT_PTT7) {
-		keypressed = 1;
-		key = '2';
+		if (key != '2' || TCNT > next_press) {
+			keypressed = 1;
+			key = '2';
+			next_press = TCNT + DEBOUNCE_INTERVAL;
+		}
 	} else if (!PTT_PTT3) {
-		keypressed = 1;
-		key = '3';
+		if (key != '3' || TCNT > next_press) {
+			keypressed = 1;
+			key = '3';
+			next_press = TCNT + DEBOUNCE_INTERVAL;
+		}
 	}
 }
 
@@ -224,14 +236,23 @@ void interrupt VectorNumber_Vtimch4 ic4_isr(void) {
 	// clear flag
 	TFLG1 = 0x10; // %00010000
 	if (!PTT_PTT5) {
-		keypressed = 1;
-		key = '4';
+		if (key != '4' || TCNT > next_press) {
+			keypressed = 1;
+			key = '4';
+			next_press = TCNT + DEBOUNCE_INTERVAL;
+		}
 	} else if (!PTT_PTT7) {
-		keypressed = 1;
-		key = '5';
+		if (key != '5' || TCNT > next_press) {
+			keypressed = 1;
+			key = '5';
+			next_press = TCNT + DEBOUNCE_INTERVAL;
+		}
 	} else if (!PTT_PTT3) {
-		keypressed = 1;
-		key = '6';
+		if (key != '6' || TCNT > next_press) {
+			keypressed = 1;
+			key = '6';
+			next_press = TCNT + DEBOUNCE_INTERVAL;
+		}
 	}
 }
 
@@ -239,14 +260,23 @@ void interrupt VectorNumber_Vtimch2 ic2_isr(void) {
 	// clear flag
 	TFLG1 = 0x04; // %00000100
 	if (!PTT_PTT5) {
-		keypressed = 1;
-		key = '7';
+		if (key != '7' || TCNT > next_press) {
+			keypressed = 1;
+			key = '7';
+			next_press = TCNT + DEBOUNCE_INTERVAL;
+		}
 	} else if (!PTT_PTT7) {
-		keypressed = 1;
-		key = '8';
+		if (key != '8' || TCNT > next_press) {
+			keypressed = 1;
+			key = '8';
+			next_press = TCNT + DEBOUNCE_INTERVAL;
+		}
 	} else if (!PTT_PTT3) {
-		keypressed = 1;
-		key = '9';
+		if (key != '9' || TCNT > next_press) {
+			keypressed = 1;
+			key = '9';
+			next_press = TCNT + DEBOUNCE_INTERVAL;
+		}
 	}
 }
 
@@ -291,7 +321,7 @@ void setNote() {
 
 void redraw() {
   char x, y;
-  
+
 	clearLCD();
 
 	for (y = 0; y < ROWS; y++) {
@@ -329,6 +359,7 @@ void main(void) {
 	note = 0;
 	rti_count = 0;
 
+	next_press = 0;
 	keypressed = 0;
 	cursorX = 0;
 	cursorY = 0;
