@@ -69,12 +69,12 @@ PT4 - connect to LCD pin 6 (E)
 PT5 - connect to LCD pin 4 (RS)
 */
 void writeNibbleToLCD(char n, char rs, int t) {
-  rs <<= 5; // get rs bit into the bit 5 position
-  PTT_PTT0 = 1; // set E to 1
-  PTM = rs|(0x0f & n); // output the nibble and RS bit
-  DelayuSec(1); // keep E pulse high a little while
-  PTT_PTT0 = 0; // set E to 0
-  DelayuSec(t);
+	rs <<= 5; // get rs bit into the bit 5 position
+	PTT_PTT0 = 1; // set E to 1
+	PTM = rs|(0x0f & n); // output the nibble and RS bit
+	DelayuSec(1); // keep E pulse high a little while
+	PTT_PTT0 = 0; // set E to 0
+	DelayuSec(t);
 }
 
 // writes a byte to the LCD, sending the high nibble first, then the low nibble
@@ -185,8 +185,8 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 // the pins for the rows on the keypad are 2,7,6, which equate to PT6,PT2,PT4
 
 void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
-  // clear flag
-  TFLG1 = 0x20; // %00100000
+	// clear flag
+	TFLG1 = 0x20; // %00100000
 	if (keypad_col == 3) { // PT3 just went high and PT5 just went low
 		TCTL1 = 0x8C; // %10001100 // set PT5 to go high, PT7 to go low
 		TCTL2 = 0x00;
@@ -219,7 +219,7 @@ void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 
 void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
 	// clear flag
-  TFLG1 = 0x80; // %10000000
+	TFLG1 = 0x80; // %10000000
 	if (keypad_col == 5) { // PT5 just went high and PT7 just went low
 		TCTL1 = 0xC0; // %11000000 // set PT7 to go high, PT3 to go low
 		TCTL2 = 0x80; // %10000000
@@ -251,8 +251,8 @@ void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
 }
 
 void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
-  // clear flag
-  TFLG1 = 0x08; // %00001000
+	// clear flag
+	TFLG1 = 0x08; // %00001000
 	if (keypad_col == 7) { // PT7 just went high and PT3 just went low
 		TCTL1 = 0x08; // %00001000 // set PT3 to go high, PT5 to go low
 		TCTL2 = 0xC0; // %11000000
@@ -367,7 +367,7 @@ void main(void) {
 	cursorX = 0;
 	cursorY = 0;
 
-  clearSong();
+	clearSong();
 
 	setupPWM();
 
