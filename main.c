@@ -18,7 +18,7 @@ char key;
 char cursorX;
 char cursorY;
 char rti_count;
-unsigned int next_press;
+unsigned int debounce_expire;
 unsigned char keypad_col;
 
 /*
@@ -126,7 +126,7 @@ The keypad needs to cycle through the pins in the order 3,1,5 which equates to P
 
 void setupKeypad(void) {
 	TSCR1 = 0x80; // enable timer and fast flag clear
-	TSCR2 = 0x07; // disable overflow interrupt, set prescaler to 128, 5.33us per tick, overflow occurs at 349.5ms
+	TSCR2 = 0x87; // enable overflow interrupt, set prescaler to 128, 5.33us per tick, overflow occurs at 349.5ms
 
 	// PT7, PT5, PT3 are output compare
 	TIOS = 0xA8; // %10101000
@@ -184,6 +184,11 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 // the columns are 3,1,5 which equate to PT5,PT7,PT3
 // the pins for the rows on the keypad are 2,7,6, which equate to PT6,PT2,PT4
 
+void interrupt VectorNumber_Vtimovf ovf_isr(void) {
+	TFLG2 = 0x80; // clear overflow flag
+	debounce_expire = 0;
+}
+
 void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 	// clear flag
 	TFLG1 = 0x20; // %00100000
@@ -194,24 +199,28 @@ void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 		TC7 = TC5 + DEAD_TICKS;
 		keypad_col = 5;
 
-		// check for pressed keys (active low)
-		if (!PTIT_PTIT6) {
-			if (key != '1' || TCNT > next_press) {
+		if (TCNT > debounce_expire) {
+			if (!PTIT_PTIT6 && key != '1') {
 				keypressed = 1;
 				key = '1';
-				next_press = TCNT + DEBOUNCE_INTERVAL;
-			}
-		} else if (!PTIT_PTIT2) {
-			if (key != '4' || TCNT > next_press) {
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (key == '1') {
+				key = 0;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (!PTIT_PTIT2 && key != '4') {
 				keypressed = 1;
 				key = '4';
-				next_press = TCNT + DEBOUNCE_INTERVAL;
-			}
-		} else if (!PTIT_PTIT4) {
-			if (key != '7' || TCNT > next_press) {
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (key == '4') {
+				key = 0;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (!PTIT_PTIT4 && key != '7') {
 				keypressed = 1;
 				key = '7';
-				next_press = TCNT + DEBOUNCE_INTERVAL;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (key == '7') {
+				key = 0;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			}
 		}
 	}
@@ -227,24 +236,28 @@ void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
 		TC3 = TC7 + DEAD_TICKS;
 		keypad_col = 7;
 
-		// check for pressed keys (active low)
-		if (!PTIT_PTIT6) {
-			if (key != '2' || TCNT > next_press) {
+		if (TCNT > debounce_expire) {
+			if (!PTIT_PTIT6 && key != '2') {
 				keypressed = 1;
 				key = '2';
-				next_press = TCNT + DEBOUNCE_INTERVAL;
-			}
-		} else if (!PTIT_PTIT2) {
-			if (key != '5' || TCNT > next_press) {
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (key == '2') {
+				key = 0;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (!PTIT_PTIT2 && key != '5') {
 				keypressed = 1;
 				key = '5';
-				next_press = TCNT + DEBOUNCE_INTERVAL;
-			}
-		} else if (!PTIT_PTIT4) {
-			if (key != '8' || TCNT > next_press) {
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (key == '5') {
+				key = 0;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (!PTIT_PTIT4 && key != '8') {
 				keypressed = 1;
 				key = '8';
-				next_press = TCNT + DEBOUNCE_INTERVAL;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (key == '8') {
+				key = 0;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			}
 		}
 	}
@@ -260,24 +273,28 @@ void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
 		TC5 = TC3 + DEAD_TICKS;
 		keypad_col = 3;
 
-		// check for pressed keys (active low)
-		if (!PTIT_PTIT6) {
-			if (key != '3' || TCNT > next_press) {
+		if (TCNT > debounce_expire) {
+			if (!PTIT_PTIT6 && key != '3') {
 				keypressed = 1;
 				key = '3';
-				next_press = TCNT + DEBOUNCE_INTERVAL;
-			}
-		} else if (!PTIT_PTIT2) {
-			if (key != '6' || TCNT > next_press) {
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (key == '3') {
+				key = 0;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (!PTIT_PTIT2 && key != '6') {
 				keypressed = 1;
 				key = '6';
-				next_press = TCNT + DEBOUNCE_INTERVAL;
-			}
-		} else if (!PTIT_PTIT4) {
-			if (key != '9' || TCNT > next_press) {
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (key == '6') {
+				key = 0;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (!PTIT_PTIT4 && key != '9') {
 				keypressed = 1;
 				key = '9';
-				next_press = TCNT + DEBOUNCE_INTERVAL;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+			} else if (key == '9') {
+				key = 0;
+				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 			}
 		}
 	}
@@ -366,7 +383,7 @@ void main(void) {
 	note = 0;
 	rti_count = 0;
 
-	next_press = 0;
+	debounce_expire = 0;
 	keypressed = 0;
 	cursorX = 0;
 	cursorY = 0;
