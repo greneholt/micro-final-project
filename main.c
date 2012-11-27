@@ -5,7 +5,8 @@
 #define COLS (20)
 #define ROWS (4)
 
-#define SCAN_TICKS (37453u) // 100ms on time per column
+//#define SCAN_TICKS (37453u) // 100ms on time per column
+#define SCAN_TICKS (3745u)
 #define DEAD_TICKS (374u) // 1ms all channels off
 
 #define DEBOUNCE_INTERVAL (100u)
@@ -129,8 +130,7 @@ void setupKeypad(void) {
 	TFLG1 = 0xff; // clear all timer flags
 
 	// PT7, PT5, PT3 are output compare, PT6, PT4, PT2 are input capture
-	TIOS = 0xA8; // %10101000
-	TIE = 0xFC; // %11111100
+	TIOS = 0xA8; // %10101000	
 
 	// PT6, PT4, PT2 need capture on falling edge as they are grounded by button pushes
 	TCTL3 = 0x22; // %00100010
@@ -142,6 +142,9 @@ void setupKeypad(void) {
 	// set PT5 to go low
 	TC5 = TCNT + SCAN_TICKS;
 	TCTL1 = 0x08; // %00001000
+	
+	// enable interrupts on all keypad channels
+	TIE = 0xFC; // %11111100
 }
 
 // PT1 is PWMed to control the speaker
@@ -164,8 +167,8 @@ void setupRTI(void) {
 void interrupt VectorNumber_Vrti rti_isr(void) {
 	CRGFLG = 0x80;
 
-	// 0.78647267 seconds per note
-	if (rti_count++ == 6) {
+	// three RTI counts per note
+	if (rti_count++ == 3) {
 		rti_count = 0;
 		note = (note + 1) % COLS;
 		if (song[note] == 0) {
@@ -183,6 +186,7 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 	if (!PTT_PTT5) { // PT3 just went high and PT5 just went low
 		TCTL1 = 0x8C; // %10001100 // set PT5 to go high, PT7 to go low
+		TCTL2 = 0x00;
 		TC5 = TC5 + SCAN_TICKS;
 		TC7 = TC5 + DEAD_TICKS;
 	}
@@ -366,8 +370,6 @@ void main(void) {
 	cursorY = 0;
 
   clearSong();
-  
-  song[0] = 254;
 
 	setupPWM();
 
