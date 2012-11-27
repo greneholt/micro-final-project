@@ -353,15 +353,15 @@ void redraw() {
 		for (x = 0; x < COLS; x++) {
 			if (x == cursorX && y == cursorY) {
 				if (song[x] == pwmTable[y]) {
-					writeByteToLCD('d', 1, 50);
+					writeByteToLCD('+', 1, 50);
 				}
 				else {
-					writeByteToLCD('c', 1, 50);
+					writeByteToLCD('|', 1, 50);
 				}
 			}
 			else {
 				if (song[x] == pwmTable[y]) {
-					writeByteToLCD('l', 1, 50);
+					writeByteToLCD('-', 1, 50);
 				}
 				else {
 					writeByteToLCD(' ', 1, 50);
