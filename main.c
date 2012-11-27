@@ -17,7 +17,7 @@ char keypressed;
 char key;
 char cursorX;
 char cursorY;
-char rti_count;
+unsigned char rti_count;
 unsigned int debounce_expire;
 unsigned char keypad_col;
 
@@ -158,7 +158,7 @@ void setupPWM(void) {
 }
 
 void setupRTI(void) {
-	RTICTL = 0x13; // set divider to 4*2^10, freq of 1953.125 Hz
+	RTICTL = 0x17; // set divider to 4*2^10, freq of 1953.125 Hz
 	CRGINT = 0x80; // enable RTI interrupt
 }
 
@@ -166,7 +166,7 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 	CRGFLG = 0x80;
 
 	// three RTI counts per note
-	if (rti_count++ == ATDDR0L) {
+	if (rti_count++ >= ATDDR0L) {
 		rti_count = 0;
 		note = (note + 1) % COLS;
 		if (song[note] == 0) {
@@ -378,8 +378,8 @@ void redraw() {
 void setupADC(void) {
 	ATDCTL2 = 0xC0; // enable ATD and fast flag clear
 	ATDCTL3 = 0x08; // set ATD for 1 channel conversion
-	ATDCTL4 = 0x85, // set ATD for 2 MHz,2 sample clks,8 bits
-	ATDCTL5 = 0xA2, // right justif, continuous conv, use AN02
+	ATDCTL4 = 0x85; // set ATD for 2 MHz,2 sample clks,8 bits
+	ATDCTL5 = 0xA2; // right justif, continuous conv, use AN02
 	// A/D results appear in ATDDR0L
 }
 
