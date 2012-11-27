@@ -12,7 +12,7 @@
 
 char note;
 char playing; // boolean currently playing
-char song[COLS]; // stores note periods in timer counts
+unsigned char song[COLS]; // stores note periods in timer counts
 char keypressed;
 char key;
 char cursorX;
@@ -28,7 +28,7 @@ E4 - 329.63 Hz / 105 cm = 0.003034 s = 3.034 ms = 3034 us / # Ticks = 197.8696 =
 G4 - 392.00 Hz / 88.0 cm = 0.002551 s = 2.551 ms = 2551 us / # Ticks = 166.3696 => 166
 A4 - 440.00 Hz / 78.4 cm = 0.002273 s = 2.273 ms = 2273 us / # Ticks = 148.2391 => 148
 */
-char pwmTable[] = { 254, 222, 198, 166, 148 };
+unsigned char pwmTable[] = { 254, 222, 198, 166, 148 };
 
 #define RIGHT '6'
 #define LEFT '4'
@@ -68,11 +68,12 @@ PT4 - connect to LCD pin 6 (E)
 PT5 - connect to LCD pin 4 (RS)
 */
 void writeNibbleToLCD(char n, char rs, int t) {
-	rs <<= 5;					// get rs bit into the bit 5 position
-	PTT = rs|0x10|(0x0f & n);	// output the nibble with E=1
-	DelayuSec(1);				// keep E pulse high a little while
-	PTT &= ~0x10;				// make E go to 0
-	DelayuSec(t);
+  rs <<= 5; // get rs bit into the bit 5 position 
+  PTT_PTT0 = 1; // set E to 1
+  PTM = rs|(0x0f & n); // output the nibble and RS bit
+  DelayuSec(1); // keep E pulse high a little while
+  PTT_PTT0 = 0; // set E to 0
+  DelayuSec(t);
 }
 
 // writes a byte to the LCD, sending the high nibble first, then the low nibble
@@ -151,7 +152,7 @@ void setupPWM(void) {
 	// select clock SA for PT1
 	PWMCLK = 0x02; // %00000010
 	PWMPOL = 0x02;
-	PWME = 0x02;
+	PWME = 0x00;
 	MODRR = 0x02;
 }
 
@@ -167,7 +168,7 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 	if (rti_count++ == 6) {
 		rti_count = 0;
 		note = (note + 1) % COLS;
-		if (song[note] == -1) {
+		if (song[note] == 0) {
 			PWME = 0x00;
 		}
 		else {
@@ -296,7 +297,7 @@ void playOrPause() {
 void clearSong() {
 	char i;
 	for (i = 0; i < COLS; i++) {
-		song[i] = -1;
+		song[i] = 0;
 	}
 }
 
@@ -364,11 +365,17 @@ void main(void) {
 	cursorX = 0;
 	cursorY = 0;
 
+  clearSong();
+  
+  song[0] = 254;
+
 	setupPWM();
 
 	setupKeypad();
 
 	setupRTI();
+	
+	redraw();
 
 	EnableInterrupts;
 
