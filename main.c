@@ -5,10 +5,10 @@
 #define COLS (20)
 #define ROWS (4)
 
-#define SCAN_TICKS (37453u) // 100ms on time per column
-#define DEAD_TICKS (374u) // 1ms all channels off
+#define SCAN_TICKS (200u) // 100ms on time per column
+#define DEAD_TICKS (5u) // 1ms all channels off
 
-#define DEBOUNCE_INTERVAL (1000u)
+#define DEBOUNCE_INTERVAL (37400u)
 
 char note;
 char playing; // boolean currently playing
@@ -33,8 +33,8 @@ unsigned char pwmTable[] = { 254, 222, 198, 166, 148 };
 
 #define RIGHT '6'
 #define LEFT '4'
-#define UP '8'
-#define DOWN '2'
+#define UP '2'
+#define DOWN '8'
 #define ENTER '5'
 #define CLEAR '9'
 #define PLAY_PAUSE '7'
@@ -126,7 +126,7 @@ The keypad needs to cycle through the pins in the order 3,1,5 which equates to P
 
 void setupKeypad(void) {
 	TSCR1 = 0x80; // enable timer and fast flag clear
-	TSCR2 = 0x06; // disable overflow interrupt, set prescaler to 64, 2.67us per tick, overflow occurs at 174.8ms
+	TSCR2 = 0x07; // disable overflow interrupt, set prescaler to 128, 5.33us per tick, overflow occurs at 349.5ms
 
 	// PT7, PT5, PT3 are output compare
 	TIOS = 0xA8; // %10101000
@@ -318,8 +318,12 @@ void moveCursor(char key) {
 	}
 }
 
-void setNote() {
-	song[cursorX] = pwmTable[cursorY];
+void setOrClearNote() {
+  if (song[cursorX] == pwmTable[cursorY]) {
+    song[cursorX] = 0;
+  } else {
+    song[cursorX] = pwmTable[cursorY];
+  }
 }
 
 void redraw() {
@@ -387,7 +391,7 @@ void main(void) {
 				redraw();
 			}
 			else if (key == ENTER) {
-				setNote();
+				setOrClearNote();
 				redraw();
 			}
 			else if (key == PLAY_PAUSE) {
