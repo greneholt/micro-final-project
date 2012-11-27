@@ -26,10 +26,11 @@ PWM @ M = 1 / N = 184
 C4 - 261.63 Hz / 132 cm = 0.003882 s = 3.882 ms = 3882 us / # Ticks = 253.63 => 254
 D4 - 293.66 Hz / 117 cm = 0.003405 s = 3.405 ms = 3405 us / # Ticks = 222.0652 => 222
 E4 - 329.63 Hz / 105 cm = 0.003034 s = 3.034 ms = 3034 us / # Ticks = 197.8696 => 198
+F4 - 349.23 Hz / 98.8 cm = 0.002863 s = 2.863 ms = 2863 us / # Ticks = 187
 G4 - 392.00 Hz / 88.0 cm = 0.002551 s = 2.551 ms = 2551 us / # Ticks = 166.3696 => 166
 A4 - 440.00 Hz / 78.4 cm = 0.002273 s = 2.273 ms = 2273 us / # Ticks = 148.2391 => 148
 */
-unsigned char pwmTable[] = { 254, 222, 198, 166, 148 };
+unsigned char pwmTable[] = { 187, 198, 222, 254 };
 
 #define RIGHT '6'
 #define LEFT '4'
@@ -348,7 +349,7 @@ void redraw() {
 
 	clearLCD();
 
-	for (y = 0; y < ROWS; y++) {
+	for (y = 0; y < ROWS; y += 2) {
 		for (x = 0; x < COLS; x++) {
 			if (x == cursorX && y == cursorY) {
 				if (song[x] == pwmTable[y]) {
@@ -366,6 +367,10 @@ void redraw() {
 					writeByteToLCD(' ', 1, 50);
 				}
 			}
+		}
+		// the screen memory sequentially goes to row 0,2,1,3 so y needs to follow this same pattern
+		if (y == 2) {
+		  y = -1;
 		}
 	}
 }
