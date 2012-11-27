@@ -1,5 +1,5 @@
-#include <hidef.h>      /* common defines and macros */
-#include "derivative.h"      /* derivative-specific definitions */
+#include <hidef.h>			/* common defines and macros */
+#include "derivative.h"			/* derivative-specific definitions */
 
 
 #define COLS (20)
@@ -58,7 +58,7 @@ void DelayuSec(int t) {
 	}
 }
 
-/* This function writes a nibble to the LCD.  Input parameters:
+/* This function writes a nibble to the LCD.	Input parameters:
 	 n contains the nibble to be written (in the lower 4 bits)
 	 rs indicates instruction or data (rs=0 for inst, rs=1 for data)
 	 t is the time to delay after sending (units of 1 us)
@@ -68,10 +68,10 @@ PT4 - connect to LCD pin 6 (E)
 PT5 - connect to LCD pin 4 (RS)
 */
 void writeNibbleToLCD(char n, char rs, int t) {
-	rs <<= 5;				  // get rs bit into the bit 5 position
-	PTT = rs|0x10|(0x0f & n);  // output the nibble with E=1
-	DelayuSec(1);			  // keep E pulse high a little while
-	PTT &= ~0x10;			  // make E go to 0
+	rs <<= 5;					// get rs bit into the bit 5 position
+	PTT = rs|0x10|(0x0f & n);	// output the nibble with E=1
+	DelayuSec(1);				// keep E pulse high a little while
+	PTT &= ~0x10;				// make E go to 0
 	DelayuSec(t);
 }
 
@@ -83,7 +83,7 @@ void writeByteToLCD(char b, char rs, int t) {
 }
 
 void clearLCD() {
-	writeByteToLCD(0x01, 0, 2000);  // clear display and cursor home
+	writeByteToLCD(0x01, 0, 2000); // clear display and cursor home
 }
 
 void printLCD(char mystr[]) {
@@ -104,7 +104,7 @@ void InitializeLCD(void) {
 	// The first parameter in each call is the nibble to be sent,
 	// the second parameter is the rs value (rs=0 indicates an instruction),
 	// and the third parameter is the time to delay after sending (in units of us).
-	writeNibbleToLCD(0x03, 0, 5000);   // delay at least 4 ms = 4000 us
+	writeNibbleToLCD(0x03, 0, 5000); // delay at least 4 ms = 4000 us
 	writeNibbleToLCD(0x03, 0, 5000);
 	writeNibbleToLCD(0x03, 0, 5000);
 	writeNibbleToLCD(0x02, 0, 5000);
@@ -112,10 +112,10 @@ void InitializeLCD(void) {
 	// the second parameter is the rs value (rs=0 indicates an instruction),
 	// and the 3rd parameter is the time to delay after sending both nibbles (usec).
 	// These commands are all fast (~40 us) except for "clear display" (2 ms)
-	writeByteToLCD(0x28, 0, 50);	// 2 lines, 5x8 dots
-	writeByteToLCD(0x0c, 0, 50);   // display on, no cursor, no blinking
-	writeByteToLCD(0x14, 0, 50);	// shift cursor right
-	writeByteToLCD(0x01, 0, 2000);  // clear display and cursor home
+	writeByteToLCD(0x28, 0, 50); // 2 lines, 5x8 dots
+	writeByteToLCD(0x0c, 0, 50); // display on, no cursor, no blinking
+	writeByteToLCD(0x14, 0, 50); // shift cursor right
+	writeByteToLCD(0x01, 0, 2000); // clear display and cursor home
 }
 
 /*
@@ -294,7 +294,7 @@ void playOrPause() {
 }
 
 void clearSong() {
-  char i;
+	char i;
 	for (i = 0; i < COLS; i++) {
 		song[i] = -1;
 	}
@@ -320,7 +320,7 @@ void setNote() {
 }
 
 void redraw() {
-  char x, y;
+	char x, y;
 
 	clearLCD();
 
@@ -370,7 +370,7 @@ void main(void) {
 
 	setupRTI();
 
-  EnableInterrupts;
+	EnableInterrupts;
 
 	for(;;) {
 		if (keypressed) {
