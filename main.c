@@ -69,7 +69,7 @@ PT4 - connect to LCD pin 6 (E)
 PT5 - connect to LCD pin 4 (RS)
 */
 void writeNibbleToLCD(char n, char rs, int t) {
-  rs <<= 5; // get rs bit into the bit 5 position 
+  rs <<= 5; // get rs bit into the bit 5 position
   PTT_PTT0 = 1; // set E to 1
   PTM = rs|(0x0f & n); // output the nibble and RS bit
   DelayuSec(1); // keep E pulse high a little while
@@ -127,14 +127,9 @@ The keypad needs to cycle through the pins in the order 3,1,5 which equates to P
 void setupKeypad(void) {
 	TSCR1 = 0x80; // enable timer and fast flag clear
 	TSCR2 = 0x06; // disable overflow interrupt, set prescaler to 64, 2.67us per tick, overflow occurs at 174.8ms
-	TFLG1 = 0xff; // clear all timer flags
 
-	// PT7, PT5, PT3 are output compare, PT6, PT4, PT2 are input capture
-	TIOS = 0xA8; // %10101000	
-
-	// PT6, PT4, PT2 need capture on falling edge as they are grounded by button pushes
-	TCTL3 = 0x22; // %00100010
-	TCTL4 = 0x20; // $00100000
+	// PT7, PT5, PT3 are output compare
+	TIOS = 0xA8; // %10101000
 
 	// set PT 7,5,3 high
 	PTT |= 0xA8; // %10101000
@@ -143,9 +138,10 @@ void setupKeypad(void) {
 	TC5 = TCNT + SCAN_TICKS;
 	TCTL1 = 0x08; // %00001000
 	keypad_col = 3;
-	
-	// enable interrupts on all keypad channels
-	TIE = 0xFC; // %11111100
+
+	// enable interrupts on PT7, PT5, PT3
+	TIE = 0xA8; // %10101000
+	TFLG1 = 0xff; // clear all timer flags
 }
 
 // PT1 is PWMed to control the speaker
@@ -184,6 +180,10 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 }
 
 // keypad control ISRs
+
+// the columns are 3,1,5 which equate to PT5,PT7,PT3
+// the pins for the rows on the keypad are 2,7,6, which equate to PT6,PT2,PT4
+
 void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
   // clear flag
   TFLG1 = 0x20; // %00100000
@@ -193,6 +193,27 @@ void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 		TC5 = TC5 + SCAN_TICKS;
 		TC7 = TC5 + DEAD_TICKS;
 		keypad_col = 5;
+
+		// check for pressed keys (active low)
+		if (!PTT_PTT6) {
+			if (key != '1' || TCNT > next_press) {
+				keypressed = 1;
+				key = '1';
+				next_press = TCNT + DEBOUNCE_INTERVAL;
+			}
+		} else if (!PTT_PTT2) {
+			if (key != '4' || TCNT > next_press) {
+				keypressed = 1;
+				key = '4';
+				next_press = TCNT + DEBOUNCE_INTERVAL;
+			}
+		} else if (!PTT_PTT4) {
+			if (key != '7' || TCNT > next_press) {
+				keypressed = 1;
+				key = '7';
+				next_press = TCNT + DEBOUNCE_INTERVAL;
+			}
+		}
 	}
 }
 
@@ -205,6 +226,27 @@ void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
 		TC7 = TC7 + SCAN_TICKS;
 		TC3 = TC7 + DEAD_TICKS;
 		keypad_col = 7;
+
+		// check for pressed keys (active low)
+		if (!PTT_PTT6) {
+			if (key != '2' || TCNT > next_press) {
+				keypressed = 1;
+				key = '2';
+				next_press = TCNT + DEBOUNCE_INTERVAL;
+			}
+		} else if (!PTT_PTT2) {
+			if (key != '5' || TCNT > next_press) {
+				keypressed = 1;
+				key = '5';
+				next_press = TCNT + DEBOUNCE_INTERVAL;
+			}
+		} else if (!PTT_PTT4) {
+			if (key != '8' || TCNT > next_press) {
+				keypressed = 1;
+				key = '8';
+				next_press = TCNT + DEBOUNCE_INTERVAL;
+			}
+		}
 	}
 }
 
@@ -217,80 +259,26 @@ void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
 		TC3 = TC3 + SCAN_TICKS;
 		TC5 = TC3 + DEAD_TICKS;
 		keypad_col = 3;
-	}
-}
 
-// the columns are 3,1,5 which equate to PT5,PT7,PT3
-// the pins for the rows on the keypad are 2,7,6, which equate to PT6,PT4,PT2
-
-void interrupt VectorNumber_Vtimch6 ic6_isr(void) {
-	// clear flag
-	TFLG1 = 0x40; // %01000000
-	if (keypad_col == 5) {
-		if (key != '1' || TCNT > next_press) {
-			keypressed = 1;
-			key = '1';
-			next_press = TCNT + DEBOUNCE_INTERVAL;
-		}
-	} if (keypad_col == 7) {
-		if (key != '2' || TCNT > next_press) {
-			keypressed = 1;
-			key = '2';
-			next_press = TCNT + DEBOUNCE_INTERVAL;
-		}
-	} else if (keypad_col == 3) {
-		if (key != '3' || TCNT > next_press) {
-			keypressed = 1;
-			key = '3';
-			next_press = TCNT + DEBOUNCE_INTERVAL;
-		}
-	}
-}
-
-void interrupt VectorNumber_Vtimch4 ic4_isr(void) {
-	// clear flag
-	TFLG1 = 0x10; // %00010000
-	if (keypad_col == 5) {
-		if (key != '4' || TCNT > next_press) {
-			keypressed = 1;
-			key = '4';
-			next_press = TCNT + DEBOUNCE_INTERVAL;
-		}
-	} if (keypad_col == 7) {
-		if (key != '5' || TCNT > next_press) {
-			keypressed = 1;
-			key = '5';
-			next_press = TCNT + DEBOUNCE_INTERVAL;
-		}
-	} if (keypad_col == 3) {
-		if (key != '6' || TCNT > next_press) {
-			keypressed = 1;
-			key = '6';
-			next_press = TCNT + DEBOUNCE_INTERVAL;
-		}
-	}
-}
-
-void interrupt VectorNumber_Vtimch2 ic2_isr(void) {
-	// clear flag
-	TFLG1 = 0x04; // %00000100
-	if (keypad_col == 5) {
-		if (key != '7' || TCNT > next_press) {
-			keypressed = 1;
-			key = '7';
-			next_press = TCNT + DEBOUNCE_INTERVAL;
-		}
-	} else if (keypad_col == 7) {
-		if (key != '8' || TCNT > next_press) {
-			keypressed = 1;
-			key = '8';
-			next_press = TCNT + DEBOUNCE_INTERVAL;
-		}
-	} else if (keypad_col == 3) {
-		if (key != '9' || TCNT > next_press) {
-			keypressed = 1;
-			key = '9';
-			next_press = TCNT + DEBOUNCE_INTERVAL;
+		// check for pressed keys (active low)
+		if (!PTT_PTT6) {
+			if (key != '3' || TCNT > next_press) {
+				keypressed = 1;
+				key = '3';
+				next_press = TCNT + DEBOUNCE_INTERVAL;
+			}
+		} else if (!PTT_PTT2) {
+			if (key != '6' || TCNT > next_press) {
+				keypressed = 1;
+				key = '6';
+				next_press = TCNT + DEBOUNCE_INTERVAL;
+			}
+		} else if (!PTT_PTT4) {
+			if (key != '9' || TCNT > next_press) {
+				keypressed = 1;
+				key = '9';
+				next_press = TCNT + DEBOUNCE_INTERVAL;
+			}
 		}
 	}
 }
@@ -386,7 +374,7 @@ void main(void) {
 	setupKeypad();
 
 	setupRTI();
-	
+
 	redraw();
 
 	EnableInterrupts;
