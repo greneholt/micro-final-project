@@ -195,19 +195,19 @@ void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 		keypad_col = 5;
 
 		// check for pressed keys (active low)
-		if (!PTT_PTT6) {
+		if (!PTIT_PTIT6) {
 			if (key != '1' || TCNT > next_press) {
 				keypressed = 1;
 				key = '1';
 				next_press = TCNT + DEBOUNCE_INTERVAL;
 			}
-		} else if (!PTT_PTT2) {
+		} else if (!PTIT_PTIT2) {
 			if (key != '4' || TCNT > next_press) {
 				keypressed = 1;
 				key = '4';
 				next_press = TCNT + DEBOUNCE_INTERVAL;
 			}
-		} else if (!PTT_PTT4) {
+		} else if (!PTIT_PTIT4) {
 			if (key != '7' || TCNT > next_press) {
 				keypressed = 1;
 				key = '7';
@@ -228,19 +228,19 @@ void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
 		keypad_col = 7;
 
 		// check for pressed keys (active low)
-		if (!PTT_PTT6) {
+		if (!PTIT_PTIT6) {
 			if (key != '2' || TCNT > next_press) {
 				keypressed = 1;
 				key = '2';
 				next_press = TCNT + DEBOUNCE_INTERVAL;
 			}
-		} else if (!PTT_PTT2) {
+		} else if (!PTIT_PTIT2) {
 			if (key != '5' || TCNT > next_press) {
 				keypressed = 1;
 				key = '5';
 				next_press = TCNT + DEBOUNCE_INTERVAL;
 			}
-		} else if (!PTT_PTT4) {
+		} else if (!PTIT_PTIT4) {
 			if (key != '8' || TCNT > next_press) {
 				keypressed = 1;
 				key = '8';
@@ -261,19 +261,19 @@ void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
 		keypad_col = 3;
 
 		// check for pressed keys (active low)
-		if (!PTT_PTT6) {
+		if (!PTIT_PTIT6) {
 			if (key != '3' || TCNT > next_press) {
 				keypressed = 1;
 				key = '3';
 				next_press = TCNT + DEBOUNCE_INTERVAL;
 			}
-		} else if (!PTT_PTT2) {
+		} else if (!PTIT_PTIT2) {
 			if (key != '6' || TCNT > next_press) {
 				keypressed = 1;
 				key = '6';
 				next_press = TCNT + DEBOUNCE_INTERVAL;
 			}
-		} else if (!PTT_PTT4) {
+		} else if (!PTIT_PTIT4) {
 			if (key != '9' || TCNT > next_press) {
 				keypressed = 1;
 				key = '9';
