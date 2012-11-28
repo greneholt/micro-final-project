@@ -190,7 +190,7 @@ void interrupt VectorNumber_Vtimovf ovf_isr(void) {
 	debounce_expire = 0;
 }
 
-void inline handle_key(unsigned char pressed, unsigned char key_code) {
+void handle_key(unsigned char pressed, unsigned char key_code) {
 	if (pressed && key != key_code) { // if the key is depressed and was previously not pressed
 		keypressed = 1; // flag a key as having been pressed
 		key = key_code; // flag which key was pressed
