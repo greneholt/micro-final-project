@@ -32,6 +32,7 @@ A4 - 440.00 Hz / 78.4 cm = 0.002273 s = 2.273 ms = 2273 us / # Ticks = 148.2391 
 */
 unsigned char pwmTable[] = { 187, 198, 222, 254 };
 
+/*
 #define RIGHT '6'
 #define LEFT '4'
 #define UP '2'
@@ -39,6 +40,15 @@ unsigned char pwmTable[] = { 187, 198, 222, 254 };
 #define ENTER '5'
 #define CLEAR '9'
 #define PLAY_PAUSE '7'
+*/
+
+#define RIGHT '8'
+#define LEFT '2'
+#define UP '6'
+#define DOWN '4'
+#define ENTER '5'
+#define CLEAR '7'
+#define PLAY_PAUSE '1'
 
 void DelayuSec(int t) {
 	if(t == 0) return;
