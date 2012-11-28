@@ -190,6 +190,17 @@ void interrupt VectorNumber_Vtimovf ovf_isr(void) {
 	debounce_expire = 0;
 }
 
+void inline handle_key(unsigned char pressed, unsigned char key_code) {
+	if (pressed && key != key_code) { // if the key is depressed and was previously not pressed
+		keypressed = 1; // flag a key as having been pressed
+		key = key_code; // flag which key was pressed
+		debounce_expire = TCNT + DEBOUNCE_INTERVAL; // set the debounce expire time
+	} else if (!pressed && key == key_code) { // if the key is not depressed and previously was
+		key = 0; // flag that no key is pressed
+		debounce_expire = TCNT + DEBOUNCE_INTERVAL;
+	}
+}
+
 void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 	// clear flag
 	TFLG1 = 0x20; // %00100000
@@ -200,29 +211,12 @@ void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 		TC7 = TC5 + DEAD_TICKS;
 		keypad_col = 5;
 
+		// until the debounce interval is over we ignore all input
 		if (TCNT > debounce_expire) {
-			if (!PTIT_PTIT6 && key != '1') {
-				keypressed = 1;
-				key = '1';
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (PTIT_PTIT6 && key == '1') {
-				key = 0;
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (!PTIT_PTIT2 && key != '4') {
-				keypressed = 1;
-				key = '4';
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (PTIT_PTIT2 && key == '4') {
-				key = 0;
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (!PTIT_PTIT4 && key != '7') {
-				keypressed = 1;
-				key = '7';
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (PTIT_PTIT4 && key == '7') {
-				key = 0;
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			}
+			// keys are active low
+			handle_key(!PTIT_PTIT6, '1');
+			handle_key(!PTIT_PTIT2, '4');
+			handle_key(!PTIT_PTIT4, '7');
 		}
 	}
 }
@@ -238,28 +232,9 @@ void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
 		keypad_col = 7;
 
 		if (TCNT > debounce_expire) {
-			if (!PTIT_PTIT6 && key != '2') {
-				keypressed = 1;
-				key = '2';
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (PTIT_PTIT6 && key == '2') {
-				key = 0;
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (!PTIT_PTIT2 && key != '5') {
-				keypressed = 1;
-				key = '5';
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (PTIT_PTIT2 && key == '5') {
-				key = 0;
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (!PTIT_PTIT4 && key != '8') {
-				keypressed = 1;
-				key = '8';
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (PTIT_PTIT4 && key == '8') {
-				key = 0;
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			}
+			handle_key(!PTIT_PTIT6, '2');
+			handle_key(!PTIT_PTIT2, '5');
+			handle_key(!PTIT_PTIT4, '8');
 		}
 	}
 }
@@ -275,28 +250,9 @@ void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
 		keypad_col = 3;
 
 		if (TCNT > debounce_expire) {
-			if (!PTIT_PTIT6 && key != '3') {
-				keypressed = 1;
-				key = '3';
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (PTIT_PTIT6 && key == '3') {
-				key = 0;
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (!PTIT_PTIT2 && key != '6') {
-				keypressed = 1;
-				key = '6';
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (PTIT_PTIT2 && key == '6') {
-				key = 0;
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (!PTIT_PTIT4 && key != '9') {
-				keypressed = 1;
-				key = '9';
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			} else if (PTIT_PTIT4 && key == '9') {
-				key = 0;
-				debounce_expire = TCNT + DEBOUNCE_INTERVAL;
-			}
+			handle_key(!PTIT_PTIT6, '3');
+			handle_key(!PTIT_PTIT2, '6');
+			handle_key(!PTIT_PTIT4, '9');
 		}
 	}
 }
