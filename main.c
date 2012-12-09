@@ -5,21 +5,21 @@
 #define COLS (20)
 #define ROWS (4)
 
-#define SCAN_TICKS (200u) // 100ms on time per column
-#define DEAD_TICKS (5u) // 1ms all channels off
+#define SCAN_TICKS (200u) // 1ms on time per column
+#define DEAD_TICKS (5u) // 27us all channels off
 
-#define DEBOUNCE_INTERVAL (374u)
+#define DEBOUNCE_INTERVAL (374u) // ignores fluctuations for 2ms
 
-char note;
+char note; // the currently playing note index
 char playing; // boolean currently playing
-unsigned char song[COLS]; // stores note periods in timer counts
-char keypressed;
-char key;
-char cursorX;
-char cursorY;
-unsigned char rti_count;
-unsigned int debounce_expire;
-unsigned char keypad_col;
+unsigned char song[COLS]; // stores the notes in the song using their periods in timer counts
+char keypressed; // whether a key was just pressed
+char key; // the key that was last pressed
+char cursorX; // the x position of the cursor, starting at 0 (top down coordinate system)
+char cursorY; // the y position of the cursor, starting at 0
+unsigned char rti_count; // the number of rti interrupts that have occurred since the last note increment
+unsigned int debounce_expire; // the time when inputs should stop being ignored
+unsigned char keypad_col; // the column on the keypad that is currently pulled low
 
 /*
 PWM @ M = 1 / N = 184
@@ -32,16 +32,7 @@ A4 - 440.00 Hz / 78.4 cm = 0.002273 s = 2.273 ms = 2273 us / # Ticks = 148.2391 
 */
 unsigned char pwmTable[] = { 187, 198, 222, 254 };
 
-/*
-#define RIGHT '6'
-#define LEFT '4'
-#define UP '2'
-#define DOWN '8'
-#define ENTER '5'
-#define CLEAR '9'
-#define PLAY_PAUSE '7'
-*/
-
+// setup keypad constants
 #define RIGHT '8'
 #define LEFT '2'
 #define UP '6'
@@ -50,23 +41,39 @@ unsigned char pwmTable[] = { 187, 198, 222, 254 };
 #define CLEAR '7'
 #define PLAY_PAUSE '1'
 
-void DelayuSec(int t) {
-	if(t == 0) return;
+// delay for t microseconds
+void DelayuSec(int t)
+{
+	if(t == 0) {
+		return;
+	}
 
 	__asm {
-			ldx t		; get number of usec to delay
-			; Main loop is 24 cycles, or 1 usec
+		ldx t		;
+		get number of usec to delay
+		;
+		Main loop is 24 cycles, or 1 usec
 		loop:
-			psha		; 2 E cycles
-			pula		; 3 E cycles
-			psha		; 2 E cycles
-			pula		; 3 E cycles
-			psha		; 2 E cycles
-			pula		; 3 E cycles
-			psha		; 2 E cycles
-			pula		; 3 E cycles
-			nop			; 1 E cycle
-			dbne x,loop ; 3 E cycles
+		psha		;
+		2 E cycles
+		pula		;
+		3 E cycles
+		psha		;
+		2 E cycles
+		pula		;
+		3 E cycles
+		psha		;
+		2 E cycles
+		pula		;
+		3 E cycles
+		psha		;
+		2 E cycles
+		pula		;
+		3 E cycles
+		nop			;
+		1 E cycle
+		dbne x,loop ;
+		3 E cycles
 	}
 }
 
@@ -79,7 +86,8 @@ PT0:PT3 - connect to LCD pins 8:14 (DB4:DB7)
 PT4 - connect to LCD pin 6 (E)
 PT5 - connect to LCD pin 4 (RS)
 */
-void writeNibbleToLCD(char n, char rs, int t) {
+void writeNibbleToLCD(char n, char rs, int t)
+{
 	rs <<= 5; // get rs bit into the bit 5 position
 	PTT_PTT0 = 1; // set E to 1
 	PTM = rs|(0x0f & n); // output the nibble and RS bit
@@ -89,27 +97,36 @@ void writeNibbleToLCD(char n, char rs, int t) {
 }
 
 // writes a byte to the LCD, sending the high nibble first, then the low nibble
-void writeByteToLCD(char b, char rs, int t) {
+void writeByteToLCD(char b, char rs, int t)
+{
 	writeNibbleToLCD(b >> 4, rs, 50);
 	writeNibbleToLCD(b, rs, 50);
 	DelayuSec(t);
 }
 
-void clearLCD() {
-	writeByteToLCD(0x01, 0, 2000); // clear display and cursor home
+// clears the display and reset the cursor to the home position
+void clearLCD()
+{
+	writeByteToLCD(0x01, 0, 2000);
 }
 
-void printLCD(char mystr[]) {
+// prints the string to the display
+void printLCD(char mystr[])
+{
 	int i = 0;
 	clearLCD();
 
 	while (*mystr) {
-		if (i++ >= 80) break;
+		if (i++ >= 80) {
+			break;
+		}
 		writeByteToLCD(*(mystr++), 1, 50);
 	}
 }
 
-void InitializeLCD(void) {
+// initializes the LCD to be ready to accept strings
+void InitializeLCD(void)
+{
 	int i;
 	for (i=0; i<100; i++) { // delay 100ms to allow LCD powerup
 		DelayuSec(1000);
@@ -135,7 +152,9 @@ void InitializeLCD(void) {
 The keypad needs to cycle through the pins in the order 3,1,5 which equates to PT5,PT7,PT3
 */
 
-void setupKeypad(void) {
+// setup timers and interrupts for handling keypad input
+void setupKeypad(void)
+{
 	TSCR1 = 0x80; // enable timer and disable fast flag clear
 	TSCR2 = 0x87; // enable overflow interrupt, set prescaler to 128, 5.33us per tick, overflow occurs at 349.5ms
 
@@ -148,15 +167,16 @@ void setupKeypad(void) {
 	// set PT5 to go low
 	TC5 = TCNT + SCAN_TICKS;
 	TCTL1 = 0x08; // %00001000
-	keypad_col = 3;
+	keypad_col = 3; // normally column 3 comes before 5
 
 	// enable interrupts on PT7, PT5, PT3
 	TIE = 0xA8; // %10101000
 	TFLG1 = 0xff; // clear all timer flags
 }
 
-// PT1 is PWMed to control the speaker
-void setupPWM(void) {
+// setup PT1 for PWM to control the speaker
+void setupPWM(void)
+{
 	// prescaler of 1, divider of 184
 	PWMPRCLK = 0x00;
 	PWMSCLA = 184;
@@ -167,23 +187,28 @@ void setupPWM(void) {
 	MODRR = 0x02;
 }
 
-void setupRTI(void) {
+// setup the RTI interrupt for advancing the current note
+void setupRTI(void)
+{
 	RTICTL = 0x17; // set divider to 4*2^10, freq of 1953.125 Hz
 	CRGINT = 0x80; // enable RTI interrupt
 }
 
-void interrupt VectorNumber_Vrti rti_isr(void) {
+// rti interrupt
+void interrupt VectorNumber_Vrti rti_isr(void)
+{
 	CRGFLG = 0x80;
 
-	// three RTI counts per note
+	// the number of rti counts is controlled by the analog reading of the potentiometer
 	if (rti_count++ >= ATDDR0L) {
 		rti_count = 0;
-		note = (note + 1) % COLS;
-		if (song[note] == 0) {
+		note = (note + 1) % COLS; // advance the song by one note
+		if (song[note] == 0) { // if no note is set for this position, disable pwm
 			PWME = 0x00;
 		}
 		else {
 			PWME = 0x02;
+			// set the period to the period of the note, and the duty cycle to half the period
 			PWMPER1 = song[note];
 			PWMDTY1 = song[note]/2;
 		}
@@ -195,23 +220,31 @@ void interrupt VectorNumber_Vrti rti_isr(void) {
 // the columns are 3,1,5 which equate to PT5,PT7,PT3
 // the pins for the rows on the keypad are 2,7,6, which equate to PT6,PT2,PT4
 
-void interrupt VectorNumber_Vtimovf ovf_isr(void) {
+// When the output compare timer overflows, set the debounce to expire immediately.
+// This prevents the debounce system from locking the user out.
+void interrupt VectorNumber_Vtimovf ovf_isr(void)
+{
 	TFLG2 = 0x80; // clear overflow flag
 	debounce_expire = 0;
 }
 
-void handle_key(unsigned char pressed, unsigned char key_code) {
-	if (pressed && key != key_code) { // if the key is depressed and was previously not pressed
+// handles checking for a keypress
+void handle_key(unsigned char pressed, unsigned char key_code)
+{
+	if (pressed && key != key_code) { // if the key is depressed and was not already pressed
 		keypressed = 1; // flag a key as having been pressed
 		key = key_code; // flag which key was pressed
 		debounce_expire = TCNT + DEBOUNCE_INTERVAL; // set the debounce expire time
-	} else if (!pressed && key == key_code) { // if the key is not depressed and previously was
+	}
+	else if (!pressed && key == key_code) {   // if the key is not depressed and previously was
 		key = 0; // flag that no key is pressed
 		debounce_expire = TCNT + DEBOUNCE_INTERVAL;
 	}
 }
 
-void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
+// output compare interrupt on PT5, which is the first column of the keypad
+void interrupt VectorNumber_Vtimch5 oc5_isr(void)
+{
 	// clear flag
 	TFLG1 = 0x20; // %00100000
 	if (keypad_col == 3) { // PT3 just went high and PT5 just went low
@@ -231,7 +264,9 @@ void interrupt VectorNumber_Vtimch5 oc5_isr(void) {
 	}
 }
 
-void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
+// output compare interrupt on PT7, which is the second column of the keypad
+void interrupt VectorNumber_Vtimch7 oc7_isr(void)
+{
 	// clear flag
 	TFLG1 = 0x80; // %10000000
 	if (keypad_col == 5) { // PT5 just went high and PT7 just went low
@@ -249,7 +284,9 @@ void interrupt VectorNumber_Vtimch7 oc7_isr(void) {
 	}
 }
 
-void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
+// output compare interrupt on PT3, which is the third column of the keypad
+void interrupt VectorNumber_Vtimch3 oc3_isr(void)
+{
 	// clear flag
 	TFLG1 = 0x08; // %00001000
 	if (keypad_col == 7) { // PT7 just went high and PT3 just went low
@@ -267,7 +304,9 @@ void interrupt VectorNumber_Vtimch3 oc3_isr(void) {
 	}
 }
 
-void playOrPause() {
+// toggles between playing and paused states
+void playOrPause()
+{
 	if (playing) {
 		playing = 0;
 		CRGINT = 0x00; // disable RTI
@@ -280,14 +319,18 @@ void playOrPause() {
 	}
 }
 
-void clearSong() {
+// removes all the notes from the song
+void clearSong()
+{
 	char i;
 	for (i = 0; i < COLS; i++) {
 		song[i] = 0;
 	}
 }
 
-void moveCursor(char key) {
+// move the cursor in the direction specified by the key
+void moveCursor(char key)
+{
 	if (key == UP && cursorY > 0) {
 		cursorY--;
 	}
@@ -302,46 +345,58 @@ void moveCursor(char key) {
 	}
 }
 
-void setOrClearNote() {
-  if (song[cursorX] == pwmTable[cursorY]) {
-    song[cursorX] = 0;
-  } else {
-    song[cursorX] = pwmTable[cursorY];
-  }
+// toggle whether there is a note at the current cursor position
+void setOrClearNote()
+{
+	// check the period of the note to determine if there is one at the current position
+	if (song[cursorX] == pwmTable[cursorY]) {
+		// if there is a note at this position, clear it
+		song[cursorX] = 0;
+	}
+	else {
+		// otherwise put a note here
+		song[cursorX] = pwmTable[cursorY];
+	}
 }
 
-void redraw() {
+// redraws the LCD
+void redraw()
+{
 	char x, y;
 
-	clearLCD();
+	clearLCD(); // clear the lcd
 
+	// loop over every position in the screen
 	for (y = 0; y < ROWS; y += 2) {
 		for (x = 0; x < COLS; x++) {
-			if (x == cursorX && y == cursorY) {
-				if (song[x] == pwmTable[y]) {
+			if (x == cursorX && y == cursorY) { // if the cursor is at this position
+				if (song[x] == pwmTable[y]) { // if there is a note at this position
 					writeByteToLCD('+', 1, 50);
 				}
-				else {
+				else { // just the cursor
 					writeByteToLCD('|', 1, 50);
 				}
 			}
 			else {
-				if (song[x] == pwmTable[y]) {
+				if (song[x] == pwmTable[y]) { // if there is a note at this position
 					writeByteToLCD('-', 1, 50);
 				}
-				else {
+				else { // nothing here
 					writeByteToLCD(' ', 1, 50);
 				}
 			}
 		}
+
 		// the screen memory sequentially goes to row 0,2,1,3 so y needs to follow this same pattern
 		if (y == 2) {
-		  y = -1;
+			y = -1;
 		}
 	}
 }
 
-void setupADC(void) {
+// setup the analog to digital converter for AN02
+void setupADC(void)
+{
 	ATDCTL2 = 0xC0; // enable ATD and fast flag clear
 	ATDCTL3 = 0x08; // set ATD for 1 channel conversion
 	ATDCTL4 = 0x85; // set ATD for 2 MHz,2 sample clks,8 bits
@@ -349,7 +404,8 @@ void setupADC(void) {
 	// A/D results appear in ATDDR0L
 }
 
-void main(void) {
+void main(void)
+{
 	// PT 7,5,3,1,0 are outputs
 	DDRT = 0xAB; // %10101011
 	// PM 5,3,2,1,0 are outputs
@@ -358,15 +414,18 @@ void main(void) {
 
 	InitializeLCD();
 
-	playing = 1;
-	note = 0;
-	rti_count = 0;
+	playing = 1; // start in playing mode
+	note = 0; // start at the first note
+	rti_count = 0; // initialize rti count
 
+	// initialize other global variables
 	debounce_expire = 0;
 	keypressed = 0;
+	key = 0;
 	cursorX = 0;
 	cursorY = 0;
 
+	// setup interrupts and timers
 	clearSong();
 
 	setupPWM();
@@ -382,20 +441,21 @@ void main(void) {
 	EnableInterrupts;
 
 	for(;;) {
+		// wait until a key is pressed
 		if (keypressed) {
-			keypressed = 0;
-			if (key == UP || key == DOWN || key == RIGHT || key == LEFT) {
+			keypressed = 0; // clear the key pressed flag
+			if (key == UP || key == DOWN || key == RIGHT || key == LEFT) { // if a directional key was pressed, move the cursor
 				moveCursor(key);
 				redraw();
 			}
-			else if (key == ENTER) {
+			else if (key == ENTER) { // toggle a note at the current position
 				setOrClearNote();
 				redraw();
 			}
-			else if (key == PLAY_PAUSE) {
+			else if (key == PLAY_PAUSE) { // play or pause the song
 				playOrPause();
 			}
-			else if (key == CLEAR) {
+			else if (key == CLEAR) { // clear the song
 				clearSong();
 				redraw();
 			}
