@@ -49,31 +49,19 @@ void DelayuSec(int t)
 	}
 
 	__asm {
-		ldx t		;
-		get number of usec to delay
-		;
-		Main loop is 24 cycles, or 1 usec
+			ldx t		; get number of usec to delay
+			; Main loop is 24 cycles, or 1 usec
 		loop:
-		psha		;
-		2 E cycles
-		pula		;
-		3 E cycles
-		psha		;
-		2 E cycles
-		pula		;
-		3 E cycles
-		psha		;
-		2 E cycles
-		pula		;
-		3 E cycles
-		psha		;
-		2 E cycles
-		pula		;
-		3 E cycles
-		nop			;
-		1 E cycle
-		dbne x,loop ;
-		3 E cycles
+			psha		; 2 E cycles
+			pula		; 3 E cycles
+			psha		; 2 E cycles
+			pula		; 3 E cycles
+			psha		; 2 E cycles
+			pula		; 3 E cycles
+			psha		; 2 E cycles
+			pula		; 3 E cycles
+			nop			; 1 E cycle
+			dbne x,loop ; 3 E cycles
 	}
 }
 
