@@ -1,0 +1,91 @@
+function main() {
+	initialize LCD
+	setup input and output pins
+	setup keypad output compare interrupts
+	setup timer overflow interrupt
+	setup pwm
+	setup RTI interrupt
+
+	loop {
+		if key was pressed {
+			clear key pressed flag
+			if it was a directional key {
+				moveCursor(key)
+				redrawLCD()
+			}
+			else if it was the enter key {
+				setOrClearNote()
+				redrawLCD()
+			}
+			else if it was the play/pause key {
+				playOrPause()
+				redrawLCD()
+			}
+			else if it was the clear key {
+				clearSong()
+				redrawLCD()
+			}
+		}
+	}
+}
+
+function moveCursor(key) {
+	if key is up arrow {
+		decrement cursor y position
+	}
+	else if key is down arrow {
+		increment cursor y position
+	}
+	else if key is right arrow {
+		increment cursor x position
+	}
+	else if key is left arrow {
+		decrement cursor x position
+	}
+}
+
+function setOrClearNote() {
+	if there is a note at the cursor position {
+		clear the note
+	}
+	else {
+		set a note at that position
+	}
+}
+
+function playOrPause() {
+	if the song is playing {
+		disable pwm
+		disable rti
+		mark song as not playing
+	}
+	else {
+		enable pwm
+		enable rti
+		mark song as playing
+	}
+}
+
+function clearSong() {
+	set every element of song array to zero
+}
+
+interrupt rti() {
+	increment rti count
+	if rti count > rti target (from the ADC value of the potentiometer) {
+		increment note
+		setup pwm for period of new note
+		reset rti count
+	}
+}
+
+interrupt output compare keypadColumn() {
+	set this keypad column to go high after scan interval
+	set next keypad column to go low after scan interval + dead period
+
+	if row 1 input is pulled low {
+		set key pressed flag
+		set keycode to appropriate key
+	}
+	repeat for other rows
+}
