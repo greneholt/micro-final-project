@@ -100,9 +100,19 @@ interrupt output compare keypadColumn() {
 	set this keypad column to go high after scan interval
 	set next keypad column to go low after scan interval + dead period
 
-	if row 1 input is pulled low {
-		set key pressed flag
-		set keycode to appropriate key
+	if now is before debounce timeout {
+		return
 	}
+
+	if row 1 input is low and keycode is not set to this key {
+		set key pressed flag
+		set keycode to this key
+		set debounce timeout to now + debounce interval
+	}
+	else if row 1 input is high and keycode is set to this key {
+		set keycode to zero
+		set debounce timeout to now + debounce interval
+	}
+
 	repeat for other rows
 }
