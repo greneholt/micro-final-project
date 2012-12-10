@@ -70,6 +70,23 @@ function clearSong() {
 	set every element of song array to zero
 }
 
+function redrawLCD() {
+	loop over each position on the LCD {
+		if the cursor and a note are at this position {
+			write a '+' to the LCD
+		}
+		else if just a note is at this position {
+			write a '-' to the LCD
+		}
+		else if only the cursor is at this position {
+			write a '|' to the LCD
+		}
+		else {
+			write a ' ' to the LCD
+		}
+	}
+}
+
 interrupt rti() {
 	increment rti count
 	if rti count > rti target (from the ADC value of the potentiometer) {
